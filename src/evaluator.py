@@ -1,8 +1,22 @@
+"""Evaluation metrics for StockMixer model predictions."""
+
 import numpy as np
 import pandas as pd
 
 
 def evaluate(prediction, ground_truth, mask, report=False):
+    """Evaluate prediction performance against ground truth.
+
+    Args:
+        prediction: Predicted values array
+        ground_truth: Ground truth values array
+        mask: Mask array indicating valid entries
+        report: Whether to generate detailed report (default: False)
+
+    Returns:
+        Dictionary containing performance metrics
+
+    """
     assert ground_truth.shape == prediction.shape, 'shape mis-match'
     performance = {}
     # mse
@@ -100,6 +114,3 @@ def evaluate(prediction, ground_truth, mask, report=False):
     performance['sharpe5'] = (np.mean(sharpe_li5)/np.std(sharpe_li5))*15.87
     performance['prec_10'] = np.mean(prec_10)
     return performance
-
-
-

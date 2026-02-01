@@ -1,0 +1,250 @@
+# =============================================================================
+# StockMixer - Python Machine Learning Project
+# Comprehensive .gitignore
+# =============================================================================
+
+# =============================================================================
+# Python Artifacts
+# =============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Ruff linter cache
+.ruff_cache/
+
+# =============================================================================
+# Virtual Environments
+# =============================================================================
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# =============================================================================
+# IDE and Editor Configurations
+# =============================================================================
+# PyCharm / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# =============================================================================
+# Package Manager Files
+# =============================================================================
+# uv lock file - uncomment if you don't want to commit it
+# uv.lock
+
+# Poetry
+poetry.lock
+
+# Pipenv
+Pipfile.lock
+
+# Conda
+*.conda
+*.env
+
+# =============================================================================
+# Dataset and Large Data Files
+# =============================================================================
+# Pickle files (often large serialized data)
+*.pkl
+*.pickle
+
+# NumPy arrays
+*.npy
+*.npz
+
+# CSV data files (uncomment if datasets should not be committed)
+# *.csv
+
+# HDF5 files
+*.h5
+*.hdf5
+
+# Parquet files
+*.parquet
+
+# Feather files
+*.feather
+
+# =============================================================================
+# Model Checkpoints and Training Outputs
+# =============================================================================
+# Model weights and checkpoints
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.pb
+*.onnx
+*.tflite
+
+# Saved models
+models/
+checkpoints/
+runs/
+logs/
+wandb/
+mlruns/
+
+# TensorBoard
+runs/
+tensorboard_logs/
+
+# Weights & Biases
+wandb/
+
+# MLflow
+mlruns/
+
+# =============================================================================
+# OS-Specific Files
+# =============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.nfs*
+
+# =============================================================================
+# Logs and Temporary Files
+# =============================================================================
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# =============================================================================
+# Project-Specific Exclusions
+# =============================================================================
+# Large PDF files in documentation (uncomment if needed)
+# paper+slide+poster/*.pdf
+
+# Local configuration files
+local_config.py
+config_local.py
+.env
+.env.local
+.env.*.local
+
+# Output directories
+output/
+results/
+figures/
+plots/

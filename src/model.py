@@ -1,14 +1,31 @@
+"""StockMixer model implementation."""
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as func
 
 acv = nn.GELU()
 
+
 def get_loss(prediction, ground_truth, base_price, mask, batch_size, alpha):
+    """Compute the combined loss for StockMixer.
+
+    Args:
+        prediction: Predicted stock prices
+        ground_truth: Ground truth stock prices
+        base_price: Base prices for return calculation
+        mask: Mask for valid entries
+        batch_size: Size of the batch
+        alpha: Weight for ranking loss
+
+    Returns:
+        Tuple of (total_loss, reg_loss, rank_loss, return_ratio)
+
+    """
     device = prediction.device
     all_one = torch.ones(batch_size, 1, dtype=torch.float32).to(device)
     return_ratio = torch.div(torch.sub(prediction, base_price), base_price)
-    reg_loss = F.mse_loss(return_ratio * mask, ground_truth * mask)
+    reg_loss = func.mse_loss(return_ratio * mask, ground_truth * mask)
     pre_pw_dif = torch.sub(
         return_ratio @ all_one.t(),
         all_one @ return_ratio.t()
@@ -19,15 +36,25 @@ def get_loss(prediction, ground_truth, base_price, mask, batch_size, alpha):
     )
     mask_pw = mask @ mask.t()
     rank_loss = torch.mean(
-        F.relu(pre_pw_dif * gt_pw_dif * mask_pw)
+        func.relu(pre_pw_dif * gt_pw_dif * mask_pw)
     )
     loss = reg_loss + alpha * rank_loss
     return loss, reg_loss, rank_loss, return_ratio
 
 
 class MixerBlock(nn.Module):
+    """MLP-Mixer block for mixing features."""
+
     def __init__(self, mlp_dim, hidden_dim, dropout=0.0):
-        super(MixerBlock, self).__init__()
+        """Initialize MixerBlock.
+
+        Args:
+            mlp_dim: Input/output dimension
+            hidden_dim: Hidden layer dimension
+            dropout: Dropout probability (default: 0.0)
+
+        """
+        super().__init__()
         self.mlp_dim = mlp_dim
         self.dropout = dropout
 
@@ -36,25 +63,52 @@ class MixerBlock(nn.Module):
         self.dense_2 = nn.Linear(hidden_dim, mlp_dim)
 
     def forward(self, x):
+        """Forward pass through the mixer block.
+
+        Args:
+            x: Input tensor
+
+        Returns:
+            Output tensor
+
+        """
         x = self.dense_1(x)
         x = self.LN(x)
         if self.dropout != 0.0:
-            x = F.dropout(x, p=self.dropout)
+            x = func.dropout(x, p=self.dropout)
         x = self.dense_2(x)
         if self.dropout != 0.0:
-            x = F.dropout(x, p=self.dropout)
+            x = func.dropout(x, p=self.dropout)
         return x
 
 
 class Mixer2d(nn.Module):
+    """2D Mixer for time and channel mixing."""
+
     def __init__(self, time_steps, channels):
-        super(Mixer2d, self).__init__()
+        """Initialize Mixer2d.
+
+        Args:
+            time_steps: Number of time steps
+            channels: Number of channels
+
+        """
+        super().__init__()
         self.LN_1 = nn.LayerNorm([time_steps, channels])
         self.LN_2 = nn.LayerNorm([time_steps, channels])
         self.timeMixer = MixerBlock(time_steps, time_steps)
         self.channelMixer = MixerBlock(channels, channels)
 
     def forward(self, inputs):
+        """Forward pass through the 2D mixer.
+
+        Args:
+            inputs: Input tensor of shape (batch, time_steps, channels)
+
+        Returns:
+            Output tensor
+
+        """
         x = self.LN_1(inputs)
         x = x.permute(0, 2, 1)
         x = self.timeMixer(x)
@@ -66,8 +120,16 @@ class Mixer2d(nn.Module):
 
 
 class TriU(nn.Module):
+    """Triangular upper matrix layer."""
+
     def __init__(self, time_step):
-        super(TriU, self).__init__()
+        """Initialize TriU layer.
+
+        Args:
+            time_step: Number of time steps
+
+        """
+        super().__init__()
         self.time_step = time_step
         self.triU = nn.ParameterList(
             [
@@ -77,6 +139,15 @@ class TriU(nn.Module):
         )
 
     def forward(self, inputs):
+        """Forward pass through TriU.
+
+        Args:
+            inputs: Input tensor
+
+        Returns:
+            Output tensor
+
+        """
         x = self.triU[0](inputs[:, :, 0].unsqueeze(-1))
         for i in range(1, self.time_step):
             x = torch.cat([x, self.triU[i](inputs[:, :, 0:i + 1])], dim=-1)
@@ -84,14 +155,31 @@ class TriU(nn.Module):
 
 
 class TimeMixerBlock(nn.Module):
+    """Time mixing block using TriU."""
+
     def __init__(self, time_step):
-        super(TimeMixerBlock, self).__init__()
+        """Initialize TimeMixerBlock.
+
+        Args:
+            time_step: Number of time steps
+
+        """
+        super().__init__()
         self.time_step = time_step
         self.dense_1 = TriU(time_step)
         self.LN = acv
         self.dense_2 = TriU(time_step)
 
     def forward(self, x):
+        """Forward pass through the time mixer block.
+
+        Args:
+            x: Input tensor
+
+        Returns:
+            Output tensor
+
+        """
         x = self.dense_1(x)
         x = self.LN(x)
         x = self.dense_2(x)
@@ -99,8 +187,18 @@ class TimeMixerBlock(nn.Module):
 
 
 class MultiScaleTimeMixer(nn.Module):
+    """Multi-scale time mixing layer."""
+
     def __init__(self, time_step, channel, scale_count=1):
-        super(MultiScaleTimeMixer, self).__init__()
+        """Initialize MultiScaleTimeMixer.
+
+        Args:
+            time_step: Number of time steps
+            channel: Number of channels
+            scale_count: Number of scales (default: 1)
+
+        """
+        super().__init__()
         self.time_step = time_step
         self.scale_count = scale_count
         self.mix_layer = nn.ParameterList([nn.Sequential(
@@ -117,6 +215,15 @@ class MultiScaleTimeMixer(nn.Module):
         )
 
     def forward(self, x):
+        """Forward pass through multi-scale time mixer.
+
+        Args:
+            x: Input tensor
+
+        Returns:
+            Output tensor
+
+        """
         x = x.permute(0, 2, 1)
         y = self.mix_layer[0](x)
         for i in range(1, self.scale_count):
@@ -125,14 +232,32 @@ class MultiScaleTimeMixer(nn.Module):
 
 
 class Mixer2dTriU(nn.Module):
+    """2D Mixer with TriU for time mixing."""
+
     def __init__(self, time_steps, channels):
-        super(Mixer2dTriU, self).__init__()
+        """Initialize Mixer2dTriU.
+
+        Args:
+            time_steps: Number of time steps
+            channels: Number of channels
+
+        """
+        super().__init__()
         self.LN_1 = nn.LayerNorm([time_steps, channels])
         self.LN_2 = nn.LayerNorm([time_steps, channels])
         self.timeMixer = TriU(time_steps)
         self.channelMixer = MixerBlock(channels, channels)
 
     def forward(self, inputs):
+        """Forward pass through the mixer.
+
+        Args:
+            inputs: Input tensor
+
+        Returns:
+            Output tensor
+
+        """
         x = self.LN_1(inputs)
         x = x.permute(0, 2, 1)
         x = self.timeMixer(x)
@@ -144,26 +269,64 @@ class Mixer2dTriU(nn.Module):
 
 
 class MultTime2dMixer(nn.Module):
+    """Multi-time 2D mixer combining different time scales."""
+
     def __init__(self, time_step, channel, scale_dim=8):
-        super(MultTime2dMixer, self).__init__()
+        """Initialize MultTime2dMixer.
+
+        Args:
+            time_step: Number of time steps
+            channel: Number of channels
+            scale_dim: Dimension for scale mixing (default: 8)
+
+        """
+        super().__init__()
         self.mix_layer = Mixer2dTriU(time_step, channel)
         self.scale_mix_layer = Mixer2dTriU(scale_dim, channel)
 
     def forward(self, inputs, y):
+        """Forward pass through multi-time 2D mixer.
+
+        Args:
+            inputs: Input tensor
+            y: Scale input tensor
+
+        Returns:
+            Concatenated output tensor
+
+        """
         y = self.scale_mix_layer(y)
         x = self.mix_layer(inputs)
         return torch.cat([inputs, x, y], dim=1)
 
 
 class NoGraphMixer(nn.Module):
+    """Stock mixer without graph structure."""
+
     def __init__(self, stocks, hidden_dim=20):
-        super(NoGraphMixer, self).__init__()
+        """Initialize NoGraphMixer.
+
+        Args:
+            stocks: Number of stocks
+            hidden_dim: Hidden dimension (default: 20)
+
+        """
+        super().__init__()
         self.dense1 = nn.Linear(stocks, hidden_dim)
         self.activation = nn.Hardswish()
         self.dense2 = nn.Linear(hidden_dim, stocks)
         self.layer_norm_stock = nn.LayerNorm(stocks)
 
     def forward(self, inputs):
+        """Forward pass through the stock mixer.
+
+        Args:
+            inputs: Input tensor
+
+        Returns:
+            Output tensor
+
+        """
         x = inputs
         x = x.permute(1, 0)
         x = self.layer_norm_stock(x)
@@ -175,8 +338,20 @@ class NoGraphMixer(nn.Module):
 
 
 class StockMixer(nn.Module):
+    """StockMixer model for stock price prediction."""
+
     def __init__(self, stocks, time_steps, channels, market, scale):
-        super(StockMixer, self).__init__()
+        """Initialize StockMixer model.
+
+        Args:
+            stocks: Number of stocks
+            time_steps: Number of time steps
+            channels: Number of channels
+            market: Market dimension for stock mixer
+            scale: Scale factor for multi-time mixing
+
+        """
+        super().__init__()
         scale_dim = 8
         self.mixer = MultTime2dMixer(time_steps, channels, scale_dim=scale_dim)
         self.channel_fc = nn.Linear(channels, 1)
@@ -186,6 +361,15 @@ class StockMixer(nn.Module):
         self.time_fc_ = nn.Linear(time_steps * 2 + scale_dim, 1)
 
     def forward(self, inputs):
+        """Forward pass through StockMixer.
+
+        Args:
+            inputs: Input tensor of shape (batch, stocks, time_steps, channels)
+
+        Returns:
+            Predicted stock returns
+
+        """
         x = inputs.permute(0, 2, 1)
         x = self.conv(x)
         x = x.permute(0, 2, 1)
@@ -196,4 +380,3 @@ class StockMixer(nn.Module):
         y = self.time_fc(y)
         z = self.time_fc_(z)
         return y + z
-
