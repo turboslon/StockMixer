@@ -25,6 +25,7 @@ dependencies = [
     "tqdm>=4.66.0",
     "pyyaml>=6.0.1",
     "matplotlib>=3.8.0",
+    "streamlit>=1.28.0",
 ]
 
 [project.optional-dependencies]

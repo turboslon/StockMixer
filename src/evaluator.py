@@ -113,4 +113,36 @@ def evaluate(prediction, ground_truth, mask, report=False):
     sharpe_li5 = np.array(sharpe_li5)
     performance['sharpe5'] = (np.mean(sharpe_li5)/np.std(sharpe_li5))*15.87
     performance['prec_10'] = np.mean(prec_10)
+
+    # Confusion matrix based on signs of prediction and ground truth
+    # Categories: positive (>= 0) vs negative (< 0)
+    pred_sign = (prediction >= 0).astype(int)  # 1 for positive, 0 for negative
+    gt_sign = (ground_truth >= 0).astype(int)  # 1 for positive, 0 for negative
+
+    # Apply mask
+    valid_mask = (mask > 0.5).astype(int)
+    pred_sign_masked = pred_sign * valid_mask
+    gt_sign_masked = gt_sign * valid_mask
+
+    # Calculate confusion matrix components
+    # TP: pred positive, gt positive (both 1)
+    # TN: pred negative, gt negative (both 0)
+    # FP: pred positive, gt negative (pred 1, gt 0)
+    # FN: pred negative, gt positive (pred 0, gt 1)
+    tp = np.sum((pred_sign_masked == 1) & (gt_sign_masked == 1))
+    tn = np.sum((pred_sign_masked == 0) & (gt_sign_masked == 0))
+    fp = np.sum((pred_sign_masked == 1) & (gt_sign_masked == 0))
+    fn = np.sum((pred_sign_masked == 0) & (gt_sign_masked == 1))
+
+    performance['confusion_matrix'] = {
+        'TP': int(tp),
+        'TN': int(tn),
+        'FP': int(fp),
+        'FN': int(fn)
+    }
+
+    # Sign accuracy as percentage
+    total = tp + tn + fp + fn
+    performance['sign_accuracy'] = ((tp + tn) / total * 100) if total > 0 else 0.0
+
     return performance
