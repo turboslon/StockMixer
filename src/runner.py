@@ -185,7 +185,7 @@ def main():
     # Model parameters
     market_name = args.market
     stock_num = 1026
-    lookback_length = 16
+    lookback_length = 30
     valid_index = 756
     test_index = 1008
     fea_num = 5

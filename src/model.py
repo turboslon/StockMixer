@@ -352,7 +352,7 @@ class StockMixer(nn.Module):
 
         """
         super().__init__()
-        scale_dim = 8
+        scale_dim = time_steps // 2
         self.mixer = MultTime2dMixer(time_steps, channels, scale_dim=scale_dim)
         self.channel_fc = nn.Linear(channels, 1)
         self.time_fc = nn.Linear(time_steps * 2 + scale_dim, 1)

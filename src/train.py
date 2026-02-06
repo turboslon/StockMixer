@@ -161,7 +161,7 @@ def main():
 
     market_name = args.market
     stock_num = 1026
-    lookback_length = 16
+    lookback_length = 30
     epochs = 1 if args.dry_run else args.epochs
     valid_index = 756
     test_index = 1008
