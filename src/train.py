@@ -336,13 +336,13 @@ def main():
             break
 
         val_metrics = (
-            f"mse: {val_perf['mse']:.2e},      IC: {val_perf['IC']:.2e}, "
-            f"RIC: {val_perf['RIC']:.2e}, prec@10: {val_perf['prec_10']:.2e}, "
+            f"mse: {val_perf['mse']:.2e},      IC: {val_perf['IC']:.2e}, \n"
+            f"RIC: {val_perf['RIC']:.2e}, prec@10: {val_perf['prec_10']:.2e}, \n"
             f"SR:  {val_perf['sharpe5']:.2e}"
         )
         test_metrics = (
-            f"mse: {test_perf['mse']:.2e},      IC: {test_perf['IC']:.2e}, "
-            f"RIC: {test_perf['RIC']:.2e}, prec@10: {test_perf['prec_10']:.2e}, "
+            f"mse: {test_perf['mse']:.2e},      IC: {test_perf['IC']:.2e}, \n"
+            f"RIC: {test_perf['RIC']:.2e}, prec@10: {test_perf['prec_10']:.2e}, \n"
             f"SR:  {test_perf['sharpe5']:.2e}"
         )
         print('Valid performance:\n', val_metrics)
